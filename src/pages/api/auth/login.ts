@@ -41,7 +41,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const expires = new Date();
     expires.setTime(expires.getTime() + thirtyDaysInSeconds * 1000); // Convert to milliseconds
-    console.log(user);
 
     res.setHeader('Set-Cookie', `accessToken=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=${expires.toUTCString()}; Max-Age=${thirtyDaysInSeconds}`);
 

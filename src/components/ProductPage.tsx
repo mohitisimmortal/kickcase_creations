@@ -45,7 +45,7 @@ const ProductPage = () => {
 
     useEffect(() => {
         const savedDrawers = JSON.parse(localStorage.getItem('drawers') || '[]') as Drawer[];
-        const savedDimension = localStorage.getItem('dimension') || '';
+        const savedDimension = localStorage.getItem('dimension') || 'Width: 16 inch, Depth: 12 inch, Height: 7 inch';
         const savedShoeSize = localStorage.getItem('shoeSize') || '';
         setDrawers(savedDrawers);
         setDimension(savedDimension);
