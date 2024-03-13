@@ -42,9 +42,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             res.status(500).json({ error: 'Error creating order' });
         }
     } else if (req.method === 'GET') {
+        const start = req.query.start ? parseInt(req.query.start as string) : 0;
+        const limit = req.query.limit ? parseInt(req.query.limit as string) : 5; // Default limit is 5
+
         try {
             const orders = await prisma.order.findMany({
                 include: { drawers: true, address: true },
+                skip: start,
+                take: limit,
+                orderBy: { id: 'desc' }, // Orders by id in descending order
             });
 
             res.status(200).json(orders);
