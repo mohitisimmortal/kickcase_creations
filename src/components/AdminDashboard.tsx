@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { handleApiError } from '@/utils/reactToastify';
 import baseUrl from '@/baseUrl';
@@ -36,26 +36,45 @@ const AdminDashboard = () => {
     const [isPasswordCorrect, setIsPasswordCorrect] = useState(false);
     const [orders, setOrders] = useState<Order[]>(initialOrders);
     const [loading, setLoading] = useState(false);
+    const [start, setStart] = useState(0); // Track the starting index of orders to fetch
 
+    const fetchOrders = async (startIndex: number) => {
+        setLoading(true);
+        try {
+            const response = await axios.get(`${baseUrl}/orders?start=${startIndex}&limit=5`);
+            setOrders(prevOrders => [...prevOrders, ...response.data]);
+            setStart(prevStart => prevStart + response.data.length);
+
+        } catch (error) {
+            handleApiError(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // In development mode,put react strict mode to false to eliminate 2 same api calls problem
     useEffect(() => {
+        let isMounted = true
         // Check for admin's authenticated state in localStorage
         const isAuthenticated = localStorage.getItem('isAdminAuthenticated');
         const authTime = localStorage.getItem('authTime');
         const weekInMillis = 7 * 24 * 60 * 60 * 1000; // One week in milliseconds
-        if (isAuthenticated && authTime && (new Date().getTime() - parseInt(authTime) < weekInMillis)) {
+
+        const shouldFetchOrders = isAuthenticated && authTime && (new Date().getTime() - parseInt(authTime) < weekInMillis);
+
+        if (!isPasswordCorrect && shouldFetchOrders && !loading) {
             setIsPasswordCorrect(true);
-            fetchOrders()
+            fetchOrders(start);
         }
+        // Cleanup function to cancel ongoing fetch operation
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
-    const fetchOrders = async () => {
-        setLoading(true)
-        try {
-            const ordersResponse = await axios.get(`${baseUrl}/orders`);
-            setOrders(ordersResponse.data.sort((a: Order, b: Order) => b.id - a.id));
-        } catch (error) {
-            handleApiError(error)
-        } finally { setLoading(false) }
+
+    const handleViewMore = () => {
+        fetchOrders(start);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -69,7 +88,7 @@ const AdminDashboard = () => {
                 localStorage.setItem('authTime', new Date().getTime().toString());
 
                 // Fetch orders when password is correct
-                fetchOrders()
+                fetchOrders(start)
             }
         } catch (error) {
             handleApiError(error)
@@ -106,6 +125,7 @@ const AdminDashboard = () => {
         );
     }
 
+
     return (
         <div className="pl-5 pr-5 md:pl-6 md:pr-6 pt-20 bg-white pb-20">
             <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
@@ -134,6 +154,13 @@ const AdminDashboard = () => {
                     ))}
                 </div>
             }
+            <button
+                onClick={handleViewMore}
+                className="bg-blue-500 text-white px-4 py-2 rounded-md mt-4"
+                disabled={loading}
+            >
+                {loading ? <Loader /> : 'View More'}
+            </button>
         </div>
     );
 };
